@@ -210,11 +210,11 @@ def codeBuildPipelines = {
                 }
 
                 if (env.BRANCH_NAME == 'stable') {
-                  logger.info("Uploading debian package '$debName' to sovrin repo")
-                  SovrinRepo.upload {
-                      repoDistr = 'sdk'
-                      packagePath = debName
-                  }
+                    logger.info("Uploading debian package '$debName' to sovrin repo")
+                    SovrinRepo.upload {
+                        repoDistr = 'sdk'
+                        packagePath = debName
+                    }
                 }
             }
 
