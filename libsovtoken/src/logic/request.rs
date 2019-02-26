@@ -5,7 +5,7 @@ use serde_json;
 use std::ffi::CString;
 use libc::c_char;
 use {IndyHandle, ErrorCode};
-use indy::ledger::Ledger;
+use indy::ledger;
 
 use utils::ffi_support::{cstring_from_str, c_pointer_from_string};
 use utils::random::rand_req_id;
@@ -56,7 +56,15 @@ impl<T> Request<T>
     pub fn multi_sign_request(wallet_handle: IndyHandle, req: &str, dids: Vec<&str>) -> Result<String, ErrorCode> {
         let mut signed_req: String = req.to_string();
         for did in dids {
-            signed_req = Ledger::multi_sign_request(wallet_handle, did, &signed_req)?;
+            //TODO: build command_handle/cb and use ctypes
+            signed_req = ledger::indy_multi_sign_request(
+                //command_handle,
+                wallet_handle, 
+                did, 
+                &signed_req,
+                //cb
+                )?;
+        
         }
         Ok(signed_req)
     }

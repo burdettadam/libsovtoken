@@ -4,8 +4,8 @@
 use libc::c_char;
 use indy;
 
-use indy::payments::Payment;
-use indy::ledger::Ledger;
+use indy::payments;
+use indy::ledger;
 use ErrorCode;
 use logic::api_internals::{
     add_request_fees,
@@ -814,15 +814,17 @@ pub extern "C" fn build_verify_req_handler(
         }
     };
     let did = did.map(|s| String::from(s));
-
-    let res = indy::ledger::Ledger::build_get_txn_request_async(
+    //TODO: build command_handle/cb and use ctypes
+    let res = indy::ledger::indy_build_get_txn_request(
+        //command_handle
         did.as_ref().map(|x| &**x),
         Some(LEDGER_ID),
         txo.seq_no as i32,
         move |ec, res| {
             trace!("api::build_verify_req cb << ec: {:?}, res: {:?}", ec, res);
             cb(command_handle, ec as i32, c_pointer_from_string(res));
-        }
+        },
+        //cb
     );
 
     trace!("api::build_verify_req << res {:?}", res);
@@ -943,8 +945,10 @@ pub extern fn sovtoken_init() -> i32 {
 
     debug!("sovtoken_init() started");
     debug!("Going to call Payment::register");
-
-    if let Err(e) = Payment::register_method(
+    // build command_handle/callback....
+    // use ctypes .. 
+    if let Err(e) = payment::indy_register_payment_method(
+        //command_handle,
         PAYMENT_METHOD_NAME,
         Some(create_payment_address_handler),
         Some(add_request_fees_handler),
@@ -959,27 +963,33 @@ pub extern fn sovtoken_init() -> i32 {
         Some(parse_get_txn_fees_response_handler),
         Some(build_verify_req_handler),
         Some(parse_verify_response_handler),
+        //cb
     ) {
         debug!("Payment::register failed with {:?}", e);
         return e as i32
     };
 
     debug!("Going to call Ledger::register_transaction_parser_for_sp for GET_UTXO");
-
-    if let Err(e) = Ledger::register_transaction_parser_for_sp(
+    //TODO: build command_handle/cb and use ctypes
+    if let Err(e) = ledger::indy_register_transaction_parser_for_sp(
+        //command_handle,
         GET_UTXO,
         Some(get_utxo_state_proof_parser),
-        Some(free_parsed_state_proof)
+        Some(free_parsed_state_proof),
+        //cb
     ) {
         debug!("Ledger::register_transaction_parser_for_sp for GET_UTXO failed with {:?}", e);
         return e as i32
     };
 
     debug!("Going to call Ledger::register_transaction_parser_for_sp for GET_FEES");
-    if let Err(e) =  Ledger::register_transaction_parser_for_sp(
+    //TODO: build command_handle/cb and use ctypes
+    if let Err(e) =  ledger::indy_register_transaction_parser_for_sp(
+        //command_handle,
         GET_FEES,
         Some(get_fees_state_proof_parser),
         Some(free_parsed_state_proof)
+        //cb
     ) {
         debug!("Ledger::register_transaction_parser_for_sp for GET_FEES failed with {:?}", e);
         return e as i32
