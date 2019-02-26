@@ -1,5 +1,5 @@
 //! Indy-sdk crypto functions
-use indy::{IndyHandle, ErrorCode};
+use {IndyHandle, ErrorCode};
 use indy::crypto::{Crypto, Key};
 use logic::config::payment_address_config::PaymentAddressConfig;
 use utils::base58::serialize_bytes;

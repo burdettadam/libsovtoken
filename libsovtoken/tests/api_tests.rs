@@ -4,7 +4,7 @@
 extern crate sovtoken;
 extern crate indy;                      // lib-sdk project
 
-use indy::ErrorCode;
+use ErrorCode;
 use sovtoken::api::sovtoken_init;
 
 

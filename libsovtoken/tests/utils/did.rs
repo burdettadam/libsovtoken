@@ -1,6 +1,6 @@
 extern crate indy;
 
-use indy::ErrorCode;
+use ErrorCode;
 
 type DidAndVerKey = (String, String);
 

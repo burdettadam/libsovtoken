@@ -6,7 +6,7 @@ use indy;
 
 use indy::payments::Payment;
 use indy::ledger::Ledger;
-use indy::ErrorCode;
+use ErrorCode;
 use logic::api_internals::{
     add_request_fees,
     create_address

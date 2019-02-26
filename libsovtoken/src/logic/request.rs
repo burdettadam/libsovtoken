@@ -4,7 +4,8 @@ use serde::Serialize;
 use serde_json;
 use std::ffi::CString;
 use libc::c_char;
-use indy::{IndyHandle, ErrorCode, ledger::Ledger};
+use {IndyHandle, ErrorCode};
+use indy::ledger::Ledger;
 
 use utils::ffi_support::{cstring_from_str, c_pointer_from_string};
 use utils::random::rand_req_id;

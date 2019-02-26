@@ -5,7 +5,7 @@ extern crate sovtoken;
 
 mod utils;
 
-use indy::ErrorCode;
+use ErrorCode;
 use std::collections::HashMap;
 use utils::payment::get_utxo;
 use utils::setup::{Setup, SetupConfig};
