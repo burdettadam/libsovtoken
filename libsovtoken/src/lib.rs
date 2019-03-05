@@ -52,11 +52,10 @@ extern crate indy_sys as indy;                      // lib-sdk project
 // define our crate by defining the modules in the project
 // ------------------------------------------
 
-
+#[macro_use]
+pub mod macros;
 #[macro_use]
 pub mod utils;
-#[macro_use]
-mod macros;
 pub mod api;
 pub mod logic;
 pub mod libraries;
@@ -65,6 +64,7 @@ use libc::c_char;
 use std::fmt;
 use std::ptr;
 use std::ffi::CStr;
+use std::sync::mpsc;
 
 use failure::{Backtrace, Fail};
 
@@ -305,7 +305,22 @@ pub enum ErrorCode
     #[fail(display = "PaymentExtraFundsError")]
     PaymentExtraFundsError = 705,
 }
+impl ErrorCode {
+   pub fn is_ok(&self) -> bool {
+        *self == ErrorCode::Success
+    }
 
+    pub fn is_err(&self) -> bool {
+        *self != ErrorCode::Success
+    }
+
+    pub fn try_err(&self) -> Result<(), ErrorCode> {
+        if self.is_err() {
+            return Err(*self)
+        }
+        Ok(())
+    }
+}
 
 impl From<i32> for ErrorCode {
     fn from(i: i32) -> Self {
@@ -315,6 +330,28 @@ impl From<i32> for ErrorCode {
         } else {
             panic!("Unable to convert from {}, unknown error code", i)
         }
+    }
+}
+
+impl From<mpsc::RecvTimeoutError> for ErrorCode {
+    fn from(err: mpsc::RecvTimeoutError) -> Self {
+        match err {
+            mpsc::RecvTimeoutError::Timeout => {
+                warn!("Timed out waiting for libindy to call back");
+                ErrorCode::CommonIOError
+            },
+            mpsc::RecvTimeoutError::Disconnected => {
+                warn!("Channel to libindy was disconnected unexpectedly");
+                ErrorCode::CommonIOError
+            }
+        }
+    }
+}
+
+impl From<mpsc::RecvError> for ErrorCode {
+    fn from(e: mpsc::RecvError) -> Self {
+        warn!("Channel returned an error - {:?}", e);
+        ErrorCode::CommonIOError
     }
 }
 

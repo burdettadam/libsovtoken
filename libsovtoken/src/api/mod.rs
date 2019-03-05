@@ -38,6 +38,11 @@ use utils::constants::txn_types::{GET_FEES, GET_UTXO};
 use utils::ffi_support::{str_from_char_ptr, string_from_char_ptr, c_pointer_from_string};
 use utils::json_conversion::{JsonDeserialize, JsonSerialize};
 use utils::general::ResultExtension;
+use indy::CString;
+use utils::results::ResultHandler;
+use utils::callbacks::ClosureHandler;
+
+use std::ptr::null;
 
 /// This method generates private part of payment address
 /// and stores it in a secure place. It should be a
@@ -814,18 +819,18 @@ pub extern "C" fn build_verify_req_handler(
         }
     };
     let did = did.map(|s| String::from(s));
-    //TODO: build command_handle/cb and use ctypes
-    let res = indy::ledger::indy_build_get_txn_request(
-        //command_handle
-        did.as_ref().map(|x| &**x),
-        Some(LEDGER_ID),
-        txo.seq_no as i32,
-        move |ec, res| {
+
+    let closure = move |ec, res| {
             trace!("api::build_verify_req cb << ec: {:?}, res: {:?}", ec, res);
             cb(command_handle, ec as i32, c_pointer_from_string(res));
-        },
-        //cb
-    );
+        };
+
+    let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(closure));
+    did = did.as_ref().map(|x| &**x);
+    let submitter_did_str = opt_c_str!(did);
+    let ledger_type_str = opt_c_str!(LEDGER_ID);
+
+    let res = ErrorCode::from(unsafe { ledger::indy_build_get_txn_request(command_handle, opt_c_ptr!(did, submitter_did_str), opt_c_ptr!(LEDGER_ID, ledger_type_str), txo.seq_no as i32, cb) });
 
     trace!("api::build_verify_req << res {:?}", res);
 
@@ -945,52 +950,58 @@ pub extern fn sovtoken_init() -> i32 {
 
     debug!("sovtoken_init() started");
     debug!("Going to call Payment::register");
-    // build command_handle/callback....
-    // use ctypes .. 
-    if let Err(e) = payment::indy_register_payment_method(
-        //command_handle,
-        PAYMENT_METHOD_NAME,
-        Some(create_payment_address_handler),
-        Some(add_request_fees_handler),
-        Some(parse_response_with_fees_handler),
-        Some(build_get_utxo_request_handler),
-        Some(parse_get_utxo_response_handler),
-        Some(build_payment_req_handler),
-        Some(parse_payment_response_handler),
-        Some(build_mint_txn_handler),
-        Some(build_set_txn_fees_handler),
-        Some(build_get_txn_fees_handler),
-        Some(parse_get_txn_fees_response_handler),
-        Some(build_verify_req_handler),
-        Some(parse_verify_response_handler),
-        //cb
-    ) {
+
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+    let payment_method = c_str!(PAYMENT_METHOD_NAME);
+
+    if let Err(e) = ResultHandler::empty( ErrorCode::from(unsafe {
+            payments::indy_register_payment_method( command_handle,
+                                                    payment_method.as_ptr(),
+                                                    Some(create_payment_address_handler),
+                                                    Some(add_request_fees_handler),
+                                                    Some(parse_response_with_fees_handler),
+                                                    Some(build_get_utxo_request_handler),
+                                                    Some(parse_get_utxo_response_handler),
+                                                    Some(build_payment_req_handler),
+                                                    Some(parse_payment_response_handler),
+                                                    Some(build_mint_txn_handler),
+                                                    Some(build_set_txn_fees_handler),
+                                                    Some(build_get_txn_fees_handler),
+                                                    Some(parse_get_txn_fees_response_handler),
+                                                    Some(build_verify_req_handler),
+                                                    Some(parse_verify_response_handler),
+                                                    cb)
+        }), receiver) {
         debug!("Payment::register failed with {:?}", e);
         return e as i32
     };
 
     debug!("Going to call Ledger::register_transaction_parser_for_sp for GET_UTXO");
-    //TODO: build command_handle/cb and use ctypes
-    if let Err(e) = ledger::indy_register_transaction_parser_for_sp(
-        //command_handle,
-        GET_UTXO,
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+    let txn_type = c_str!(GET_UTXO);
+
+    if let Err(e) = ResultHandler::empty_timeout( ErrorCode::from( unsafe { ledger::indy_register_transaction_parser_for_sp(
+        command_handle,
+        txn_type.as_ptr(),
         Some(get_utxo_state_proof_parser),
         Some(free_parsed_state_proof),
-        //cb
-    ) {
+        cb
+    )}), receiver, null()) {
         debug!("Ledger::register_transaction_parser_for_sp for GET_UTXO failed with {:?}", e);
         return e as i32
     };
 
     debug!("Going to call Ledger::register_transaction_parser_for_sp for GET_FEES");
-    //TODO: build command_handle/cb and use ctypes
-    if let Err(e) =  ledger::indy_register_transaction_parser_for_sp(
-        //command_handle,
-        GET_FEES,
+    let (receiver, command_handle, cb) = ClosureHandler::cb_ec();
+    let txn_type = c_str!(GET_FEES);
+
+    if let Err(e) = ResultHandler::empty_timeout( ErrorCode::from( unsafe { ledger::indy_register_transaction_parser_for_sp(
+        command_handle,
+        txn_type.as_ptr(),
         Some(get_fees_state_proof_parser),
-        Some(free_parsed_state_proof)
-        //cb
-    ) {
+        Some(free_parsed_state_proof),
+        cb
+    )}), receiver, null()) {
         debug!("Ledger::register_transaction_parser_for_sp for GET_FEES failed with {:?}", e);
         return e as i32
     };

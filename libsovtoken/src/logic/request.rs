@@ -7,6 +7,8 @@ use libc::c_char;
 use {IndyHandle, ErrorCode};
 use indy::ledger;
 
+use utils::results::ResultHandler;
+use utils::callbacks::ClosureHandler;
 use utils::ffi_support::{cstring_from_str, c_pointer_from_string};
 use utils::random::rand_req_id;
 use utils::json_conversion::JsonSerialize;
@@ -56,14 +58,18 @@ impl<T> Request<T>
     pub fn multi_sign_request(wallet_handle: IndyHandle, req: &str, dids: Vec<&str>) -> Result<String, ErrorCode> {
         let mut signed_req: String = req.to_string();
         for did in dids {
-            //TODO: build command_handle/cb and use ctypes
-            signed_req = ledger::indy_multi_sign_request(
-                //command_handle,
+            let (receiver, command_handle, cb) = ClosureHandler::cb_ec_string();
+            let submitter_did = c_str!(did);
+            let request_json = c_str!(signed_req);
+            let err = ErrorCode::from(unsafe {  ledger::indy_multi_sign_request(
+                command_handle,
                 wallet_handle, 
-                did, 
-                &signed_req,
-                //cb
-                )?;
+                submitter_did.as_ptr(), 
+                request_json.as_ptr(),
+                cb
+                )});
+            
+            signed_req =  ResultHandler::one(err, receiver)?;
         
         }
         Ok(signed_req)

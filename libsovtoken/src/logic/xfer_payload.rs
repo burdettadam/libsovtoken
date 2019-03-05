@@ -213,10 +213,15 @@ trait InputSigner<A: CryptoAPI> {
 
         let input_key = input.to_string();
 
-        let ca = move |signature: Result<String, ErrorCode>| {
+        let ca = move |ec: ErrorCode, signature: String| {
             let key = input_key.clone();
+            let result = if ec == ErrorCode::Success {
+                Ok(signature)
+            } else {
+                Err(ec)
+            };
             debug!("Received encoded signature >>> {:?} for input {:?}", signature, key);
-            cb(signature, key);
+            cb(result, key);
         };
 
         let ec = crypto_api.indy_crypto_sign(
