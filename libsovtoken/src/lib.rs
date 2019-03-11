@@ -40,11 +40,9 @@ extern crate num_derive;
 extern crate android_logger;
 
 // ------------------------------------------
-// evernym/sovrin crates
+// Sovrin crates
 // ------------------------------------------
-
-extern crate indy_sys;                      // lib-sdk project
-
+extern crate indy_sys;
 // ------------------------------------------
 // define our crate by defining the modules in the project
 // ------------------------------------------

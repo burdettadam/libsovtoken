@@ -1,3 +1,4 @@
+extern crate indyrs as indy;
 extern crate serde_json;
 extern crate sovtoken;
 
