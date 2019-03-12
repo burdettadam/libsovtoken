@@ -3,6 +3,7 @@
 
 extern crate sovtoken;
 extern crate indyrs as indy;
+extern crate futures;
                      // lib-sdk project
 
 use indy::ErrorCode;

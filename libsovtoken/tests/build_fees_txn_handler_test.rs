@@ -2,7 +2,8 @@
 #[macro_use] extern crate serde_derive;
 extern crate libc;
 extern crate sovtoken;
-extern crate indyrs as indy; // lib-sdk project
+extern crate indyrs as indy;
+extern crate futures; // lib-sdk project
 extern crate bs58;
 pub mod utils;
 
@@ -17,6 +18,7 @@ use std::time::Duration;
 use utils::payment::fees;
 use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
+#[allow(unused_imports)] use futures::Future;
 
 // ***** HELPER METHODS *****
 extern "C" fn empty_create_payment_callback(_command_handle: i32, _err: i32, _mint_req_json: *const c_char) -> i32 {

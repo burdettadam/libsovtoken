@@ -808,7 +808,7 @@ pub extern "C" fn build_verify_req_handler(
 ) -> i32 {
     trace!("api::build_verify_req called >> wallet_handle {}", wallet_handle);
 
-/*    let (did, txo, cb) = match verify::deserialize(did, txo, cb) {
+    let (did, txo, cb) = match verify::deserialize(did, txo, cb) {
         Ok(a) => a,
         Err(ec) => {
             trace!("api::build_verify_req << res {:?}", ec);
@@ -816,20 +816,30 @@ pub extern "C" fn build_verify_req_handler(
         }
     };
     let did = did.map(|s| String::from(s));
+    let submitter_did = did.as_ref().map(|x| &**x);
+    let seq = txo.seq_no as i32;
+    let ledger_type = Some(LEDGER_ID);
+    //TODO: fix this.
+    /*let (command_handle, cb) = ClosureHandler::convert_cb_ec_string(Box::new(cb));
 
-    let res = indy::ledger::build_get_txn_request_async(
-        did.as_ref().map(|x| &**x),
-        Some(LEDGER_ID),
-        txo.seq_no as i32,
-        move |ec, res| {
-            trace!("api::build_verify_req cb << ec: {:?}, res: {:?}", ec, res);
-            cb(command_handle, ec as i32, c_pointer_from_string(res));
-        }
-    );
+    let submitter_did_str = opt_c_str!(submitter_did);
+    let ledger_type_str = opt_c_str!(ledger_type);
+    let call_back = move |ec, res| {
+        trace!("api::build_verify_req cb << ec: {:?}, res: {:?}", ec, res);
+        cb(command_handle, ec as i32, c_pointer_from_string(res));
+    };
+    let res = ErrorCode::from(unsafe {
+        indy_sys::ledger::indy_build_get_txn_request(command_handle,
+                                     opt_c_ptr!(submitter_did, submitter_did_str),
+                                     opt_c_ptr!(ledger_type, ledger_type_str),
+                                                          seq,
+                                                     call_back)
+    });*/
 
-    trace!("api::build_verify_req << res {:?}", res);
 
-    res as i32*/
+    //trace!("api::build_verify_req << res {:?}", res);
+
+    //res as i32
     1 as i32
 }
 

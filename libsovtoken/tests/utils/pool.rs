@@ -5,6 +5,7 @@ use utils::environment::EnvironmentUtils;
 use std::io::Write;
 use sovtoken::utils::random::rand_string;
 extern crate indyrs as indy;
+extern crate futures;
 
 pub fn create_pool_config() -> String {
     let path = create_genesis_txn_file_for_test_pool("p1", None, None);
@@ -15,7 +16,7 @@ pub fn create_pool_config() -> String {
 
 pub fn create_pool_ledger(pool_cfg: Option<&str>) -> String {
     let name = rand_string(10);
-    indy::pool::create_pool_ledger_config(&name, pool_cfg).unwrap();
+    indy::pool::create_pool_ledger_config(&name, pool_cfg).wait().unwrap();
     name
 }
 

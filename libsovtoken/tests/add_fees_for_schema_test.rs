@@ -1,6 +1,7 @@
 #[macro_use] extern crate serde_json;
 #[macro_use] extern crate serde_derive;
 extern crate indyrs as indy;
+extern crate futures;
 
 extern crate sovtoken;
 
@@ -12,6 +13,7 @@ use indy::ErrorCode;
 use sovtoken::utils::random::rand_string;
 use utils::setup::{Setup, SetupConfig};
 use utils::wallet::Wallet;
+#[allow(unused_imports)] use futures::Future;
 
 fn send_schema_with_fees(did: &str,
                          name: &str,
@@ -22,12 +24,12 @@ fn send_schema_with_fees(did: &str,
                          inputs_json: &str,
                          outputs_json: &str,
                          extra: Option<&str>) -> Result<(String, String, String, String), ErrorCode> {
-    let (schema_id, schema_json) = indy::anoncreds::issuer_create_schema(did, name, version, attrs).unwrap();
-    let schema_req = indy::ledger::build_schema_request(did, &schema_json).unwrap();
-    let schema_req_signed = indy::ledger::sign_request(wallet_handle, did, &schema_req).unwrap();
-    let (schema_req_with_fees, pm) = indy::payments::add_request_fees(wallet_handle, Some(did), &schema_req_signed, inputs_json, outputs_json, extra).unwrap();
-    let schema_resp = indy::ledger::submit_request(pool_handle, &schema_req_with_fees).unwrap();
-    indy::payments::parse_response_with_fees(&pm, &schema_resp).map(|s| (s, schema_id, schema_json, schema_resp))
+    let (schema_id, schema_json) = indy::anoncreds::issuer_create_schema(did, name, version, attrs).wait().unwrap();
+    let schema_req = indy::ledger::build_schema_request(did, &schema_json).wait().unwrap();
+    let schema_req_signed = indy::ledger::sign_request(wallet_handle, did, &schema_req).wait().unwrap();
+    let (schema_req_with_fees, pm) = indy::payments::add_request_fees(wallet_handle, Some(did), &schema_req_signed, inputs_json, outputs_json, extra).wait().unwrap();
+    let schema_resp = indy::ledger::submit_request(pool_handle, &schema_req_with_fees).wait().unwrap();
+    indy::payments::parse_response_with_fees(&pm, &schema_resp).wait().map_err(|e|e.error_code).map(|s| (s, schema_id, schema_json, schema_resp))
 }
 
 pub const SCHEMA_VERSION: &'static str = "1.0";
@@ -66,10 +68,10 @@ pub fn build_and_submit_schema_with_fees() {
 
     thread::sleep(time::Duration::from_millis(100));
 
-    let get_schema_req = indy::ledger::build_get_schema_request(Some(dids[0]), &schema_id).unwrap();
-    let get_schema_req_signed = indy::ledger::sign_request( wallet.handle, dids[0], &get_schema_req).unwrap();
+    let get_schema_req = indy::ledger::build_get_schema_request(Some(dids[0]), &schema_id).wait().unwrap();
+    let get_schema_req_signed = indy::ledger::sign_request( wallet.handle, dids[0], &get_schema_req).wait().unwrap();
     let get_schema_resp = utils::ledger::submit_request_with_retries(pool_handle, &get_schema_req_signed, &schema_resp).unwrap();
-    let (schema_id_get, _) = indy::ledger::parse_get_schema_response(&get_schema_resp).unwrap();
+    let (schema_id_get, _) = indy::ledger::parse_get_schema_response(&get_schema_resp).wait().unwrap();
     assert_eq!(schema_id, schema_id_get);
 }
 

@@ -1,4 +1,5 @@
 extern crate indyrs as indy;
+extern crate futures;
 
 use indy::ErrorCode;
 use std::time::Duration;
@@ -7,7 +8,7 @@ const SUBMIT_RETRY_CNT: usize = 3;
 
 pub fn submit_request_with_retries(pool_handle: i32, request_json: &str, previous_response: &str) -> Result<String, ErrorCode> {
     _submit_retry(_extract_seq_no_from_reply(previous_response).unwrap(), || {
-        indy::ledger::submit_request(pool_handle, request_json)
+        indy::ledger::submit_request(pool_handle, request_json).wait();
     })
 }
 

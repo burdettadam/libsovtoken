@@ -2,6 +2,7 @@
 #[macro_use] extern crate serde_derive;
 extern crate sovtoken;
 extern crate indyrs as indy;
+extern crate futures;
 
 
 mod utils;
@@ -11,6 +12,7 @@ use utils::setup::{Setup, SetupConfig};
 use std::{thread, time};
 use sovtoken::utils::random::rand_string;
 use std::collections::HashMap;
+#[allow(unused_imports)] use futures::Future;
 
 pub const SCHEMA_VERSION: &'static str = "1.0";
 pub const GVT_SCHEMA_ATTRIBUTES: &'static str = r#"["name", "age", "sex", "height"]"#;
@@ -38,7 +40,7 @@ fn send_revoc_reg_def_with_fees(issuer_did: &str,
     });
 
     let tails_writer_config = utils::anoncreds::tails_writer_config();
-    let tails_writer_handle = indy::blob_storage::open_writer("default", &tails_writer_config).unwrap();
+    let tails_writer_handle = indy::blob_storage::open_writer("default", &tails_writer_config).wait().unwrap();
 
     let it: Option<String> = None;
     let (_rev_reg_id, revoc_reg_def_json, _rev_reg_entry_json) =
@@ -48,9 +50,9 @@ fn send_revoc_reg_def_with_fees(issuer_did: &str,
                                                         tag,
                                                         &cred_def_id,
                                                         &json!({ "max_cred_num": Some(5), "issuance_type": it }).to_string(),
-                                                        tails_writer_handle).unwrap();
+                                                        tails_writer_handle).wait().unwrap();
 
-    let req = indy::ledger::build_revoc_reg_def_request(issuer_did, &revoc_reg_def_json).unwrap();
+    let req = indy::ledger::build_revoc_reg_def_request(issuer_did, &revoc_reg_def_json).wait().unwrap();
     let (req_with_fees, pm) =
         indy::payments::add_request_fees(
             wallet_handle,
@@ -58,9 +60,9 @@ fn send_revoc_reg_def_with_fees(issuer_did: &str,
             &req,
             inputs_json,
             outputs_json,
-            extra).unwrap();
-    let response = indy::ledger::sign_and_submit_request(pool_handle, wallet_handle, issuer_did, &req_with_fees).unwrap();
-    indy::payments::parse_response_with_fees(&pm, &response)
+            extra).wait().unwrap();
+    let response = indy::ledger::sign_and_submit_request(pool_handle, wallet_handle, issuer_did, &req_with_fees).wait().unwrap();
+    indy::payments::parse_response_with_fees(&pm, &response).wait().map_err(|e|e.error_code)
 }
 
 fn create_cred_def(did: &str,
@@ -80,11 +82,11 @@ fn create_cred_def(did: &str,
         &tag,
         None,
         &json!({"support_revocation": true}).to_string()
-    ).unwrap();
+    ).wait().unwrap();
 
-    let cred_def_req = indy::ledger::build_cred_def_request(did, &cred_def_json).unwrap();
-    let cred_def_req_signed = indy::ledger::sign_request(wallet_handle, did, &cred_def_req).unwrap();
-    indy::ledger::submit_request(pool_handle, &cred_def_req_signed).unwrap();
+    let cred_def_req = indy::ledger::build_cred_def_request(did, &cred_def_json).wait().unwrap();
+    let cred_def_req_signed = indy::ledger::sign_request(wallet_handle, did, &cred_def_req).wait().unwrap();
+    indy::ledger::submit_request(pool_handle, &cred_def_req_signed).wait().unwrap();
 
     (schema, cred_def_id, cred_def_json)
 }
@@ -95,14 +97,14 @@ fn create_schema_json(did: &str,
                       attrs: &str,
                       wallet_handle: i32,
                       pool_handle: i32) -> String {
-    let (schema_id, schema_json) = indy::anoncreds::issuer_create_schema(did, name, version, attrs).unwrap();
-    let schema_req = indy::ledger::build_schema_request(did, &schema_json).unwrap();
-    let schema_resp = indy::ledger::sign_and_submit_request(pool_handle, wallet_handle, did, &schema_req).unwrap();
+    let (schema_id, schema_json) = indy::anoncreds::issuer_create_schema(did, name, version, attrs).wait().unwrap();
+    let schema_req = indy::ledger::build_schema_request(did, &schema_json).wait().unwrap();
+    let schema_resp = indy::ledger::sign_and_submit_request(pool_handle, wallet_handle, did, &schema_req).wait().unwrap();
     thread::sleep(time::Duration::from_millis(100));
-    let get_schema_req = indy::ledger::build_get_schema_request(Some(did), &schema_id).unwrap();
-    let get_schema_req_signed = indy::ledger::sign_request(wallet_handle, did, &get_schema_req).unwrap();
+    let get_schema_req = indy::ledger::build_get_schema_request(Some(did), &schema_id).wait().unwrap();
+    let get_schema_req_signed = indy::ledger::sign_request(wallet_handle, did, &get_schema_req).wait().unwrap();
     let get_schema_resp = utils::ledger::submit_request_with_retries(pool_handle, &get_schema_req_signed, &schema_resp).unwrap();
-    let (_, schema_json) = indy::ledger::parse_get_schema_response(&get_schema_resp).unwrap();
+    let (_, schema_json) = indy::ledger::parse_get_schema_response(&get_schema_resp).wait().unwrap();
     schema_json
 }
 
@@ -172,8 +174,8 @@ pub fn build_and_submit_revoc_reg_def_works_with_fees_and_spent_utxo() {
         "amount": 10
     }]).to_string();
 
-    let (req, _) = indy::payments::build_payment_req(wallet.handle, Some(dids[0]), &inputs, &outputs, None).unwrap();
-    indy::ledger::submit_request(pool_handle, &req).unwrap();
+    let (req, _) = indy::payments::build_payment_req(wallet.handle, Some(dids[0]), &inputs, &outputs, None).wait().unwrap();
+    indy::ledger::submit_request(pool_handle, &req).wait().unwrap();
 
     let outputs_2 = json!([{
         "recipient": addresses[0],

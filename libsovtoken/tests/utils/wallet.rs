@@ -4,6 +4,7 @@
 
 extern crate env_logger;
 extern crate indyrs as indy;
+extern crate futures;
 extern crate sovtoken;
 
 use self::indy::ErrorCode;
@@ -69,14 +70,14 @@ impl Wallet {
     
     fn open(&mut self) -> Result<i32, ErrorCode> {
         let config : String = Wallet::create_wallet_config(&self.name);
-        let handle = IndyWallet::open_wallet(&config, USEFUL_CREDENTIALS)?;
+        let handle = IndyWallet::open_wallet(&config, USEFUL_CREDENTIALS).wait()?;
         self.handle = handle;
         return Ok(handle);
     }
 
     fn create(&self) -> Result<(), ErrorCode> {
         let config = Wallet::create_wallet_config(&self.name);
-        return IndyWallet::create_wallet(&config, USEFUL_CREDENTIALS)
+        IndyWallet::create_wallet(&config, USEFUL_CREDENTIALS).wait().map_err(|e|e.error_code)
     }
 
     fn close(&self) -> Result<(), ErrorCode> {
@@ -85,7 +86,7 @@ impl Wallet {
 
     fn delete(&self) -> Result<(), ErrorCode> {
         let config : String = Wallet::create_wallet_config(&self.name);
-        return IndyWallet::delete_wallet(&config, USEFUL_CREDENTIALS)
+        IndyWallet::delete_wallet(&config, USEFUL_CREDENTIALS).wait().map_err(|e|e.error_code)
     }
 }
 

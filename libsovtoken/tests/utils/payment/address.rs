@@ -4,6 +4,7 @@ Helpers dealing with addresses
 For integration tests
 */
 extern crate indyrs as indy;
+extern crate futures;
 use utils::wallet::Wallet;
 use sovtoken::utils::constants::general::PAYMENT_METHOD_NAME;
 
@@ -15,7 +16,7 @@ pub fn generate(wallet: &Wallet, seed: Option<&str>) -> String {
         .map(seed_json)
         .unwrap_or(String::from("{}"));
 
-    indy::payments::create_payment_address(wallet.handle, PAYMENT_METHOD_NAME, &seed).unwrap()
+    indy::payments::create_payment_address(wallet.handle, PAYMENT_METHOD_NAME, &seed).wait().unwrap()
 }
 
 /**

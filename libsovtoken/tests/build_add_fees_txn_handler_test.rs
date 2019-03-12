@@ -2,6 +2,7 @@
 #[macro_use] extern crate serde_derive;
 extern crate sovtoken;
 extern crate indyrs as indy;
+extern crate futures;
 pub mod utils;
 
 use std::sync::mpsc::channel;
@@ -14,6 +15,7 @@ use sovtoken::utils::ffi_support::c_pointer_from_str;
 use sovtoken::logic::parsers::common::TXO;
 use sovtoken::utils::test::callbacks;
 use utils::wallet::Wallet;
+#[allow(unused_imports)] use futures::Future;
 
 
 fn call_add_fees(wallet_handle: IndyHandle, inputs: String, outputs: String, extra: Option<String>, request: String) -> Result<String, ErrorCode> {
@@ -30,9 +32,11 @@ fn call_add_fees(wallet_handle: IndyHandle, inputs: String, outputs: String, ext
         extra,
         cb
     );
-
-    /*return ResultHandler::one(ErrorCode::from(error_code), receiver);*/
-        assert!(true);
+    let err = ErrorCode::from(error_code);
+    err.try_err()?;
+    let (err, val) = receiver.recv()?;
+    err.try_err()?;
+    Ok(val)
 }
 
 fn init_wallet_with_address() -> (utils::wallet::Wallet, String) {
@@ -137,26 +141,17 @@ fn test_add_fees_to_request_valid_from_libindy() {
         }
     });
 
-    let (sender, receiver) = channel();
-
-    let cb = move |ec, req, method| {
-        sender.send((ec, req, method)).unwrap();
-    };
-
-    let return_error = indy::payments::add_request_fees(// was async...
+    let (fees, method) = indy::payments::add_request_fees(
         wallet.handle,
         Some(did),
         &fake_request.to_string(),
         &inputs.to_string(),
         &outputs.to_string(),
-        None,
-        //cb
-    );
+        None
+    ).wait().unwrap();
 
-    /*let (req, method) = ResultHandler::two_timeout(return_error, receiver, Duration::from_secs(15)).unwrap();
     assert_eq!("sov", method);
-    assert_eq!(expected_fees_request.to_string(), req);*/
-    assert!(true);
+    assert_eq!(expected_fees_request.to_string(), fees);
 }
 
 #[test]
@@ -190,7 +185,7 @@ fn test_add_fees_to_request_valid_from_libindy_for_not_owned_payment_address() {
             "amount": 20,
     }]);
 
-    let err = indy::payments::add_request_fees(wallet_2.handle, Some(dids[0]), &fake_request.to_string(), &inputs.to_string(), &outputs.to_string(), None).unwrap_err();
+    let err = indy::payments::add_request_fees(wallet_2.handle, Some(dids[0]), &fake_request.to_string(), &inputs.to_string(), &outputs.to_string(), None).wait().unwrap_err();
     assert_eq!(err, indy::ErrorCode::WalletItemNotFound);
 }
 
@@ -198,7 +193,7 @@ fn test_add_fees_to_request_valid_from_libindy_for_not_owned_payment_address() {
 fn build_add_fees_to_request_works_for_invalid_utxo() {
     sovtoken::api::sovtoken_init();
     let wallet = Wallet::new();
-    let (did, _) = indy::did::create_and_store_my_did(wallet.handle, &json!({"seed": "000000000000000000000000Trustee1"}).to_string()).unwrap();
+    let (did, _) = indy::did::create_and_store_my_did(wallet.handle, &json!({"seed": "000000000000000000000000Trustee1"}).to_string()).wait().unwrap();
 
     let fake_request = json!({
        "operation": {
@@ -213,7 +208,7 @@ fn build_add_fees_to_request_works_for_invalid_utxo() {
             "amount": 20,
     }]).to_string();
 
-    let err = indy::payments::add_request_fees(wallet.handle, Some(&did), &fake_request, &inputs, &outputs, None).unwrap_err();
+    let err = indy::payments::add_request_fees(wallet.handle, Some(&did), &fake_request, &inputs, &outputs, None).wait().unwrap_err();
 
     assert_eq!(err, ErrorCode::CommonInvalidStructure)
 }
