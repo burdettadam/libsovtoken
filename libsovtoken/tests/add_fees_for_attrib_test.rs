@@ -134,7 +134,7 @@ pub fn build_and_submit_attrib_with_fees_from_invalid_did_and_check_utxo_remain_
     let pool_handle = setup.pool_handle;
     let dids = setup.trustees.dids();
 
-    let (did_new, _) = indy::did::Did::new(wallet.handle, "{}").unwrap();
+    let (did_new, _) = indy::did::create_and_store_my_did(wallet.handle, "{}").unwrap();
 
     let utxo = utils::payment::get_utxo::get_first_utxo_txo_for_payment_address(&wallet, pool_handle, dids[0], &addresses[0]);
 
@@ -192,16 +192,16 @@ pub fn build_and_submit_attrib_with_fees_double_spend() {
 }
 
 fn _send_attrib_with_fees(did: &str, data: Option<&str>, wallet_handle: i32, pool_handle: i32, inputs: &str, outputs: &str) -> Result<String, ErrorCode> {
-    let attrib_req = indy::ledger::Ledger::build_attrib_request(did, did,  None, data, None).unwrap();
-    let attrib_req_signed = indy::ledger::Ledger::sign_request(wallet_handle, did, &attrib_req).unwrap();
-    let (attrib_req_with_fees, pm) = indy::payments::Payment::add_request_fees(wallet_handle, Some(did), &attrib_req_signed, inputs, outputs, None).unwrap();
-    let attrib_resp = indy::ledger::Ledger::submit_request(pool_handle, &attrib_req_with_fees).unwrap();
-    indy::payments::Payment::parse_response_with_fees(&pm, &attrib_resp)
+    let attrib_req = indy::ledger::build_attrib_request(did, did,  None, data, None).unwrap();
+    let attrib_req_signed = indy::ledger::sign_request(wallet_handle, did, &attrib_req).unwrap();
+    let (attrib_req_with_fees, pm) = indy::payments::add_request_fees(wallet_handle, Some(did), &attrib_req_signed, inputs, outputs, None).unwrap();
+    let attrib_resp = indy::ledger::submit_request(pool_handle, &attrib_req_with_fees).unwrap();
+    indy::payments::parse_response_with_fees(&pm, &attrib_resp)
 }
 
 fn send_get_attrib_req(wallet: &Wallet, pool_handle: i32, did: &str, target: &str, attribute: Option<&str>) -> String {
-    let get_attrib_req = indy::ledger::Ledger::build_get_attrib_request(Some(did), target, attribute, None, None).unwrap();
-    indy::ledger::Ledger::sign_and_submit_request(pool_handle, wallet.handle, did, &get_attrib_req).unwrap()
+    let get_attrib_req = indy::ledger::build_get_attrib_request(Some(did), target, attribute, None, None).unwrap();
+    indy::ledger::sign_and_submit_request(pool_handle, wallet.handle, did, &get_attrib_req).unwrap()
 }
 
 fn get_data_from_attrib_reply(reply: String) -> String {

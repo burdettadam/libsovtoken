@@ -159,10 +159,10 @@ impl<'a> Setup<'a>
     {
         let pc_string = pool::create_pool_config();
         let pool_config = Some(pc_string.as_str());
-        indy::pool::Pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
+        indy::pool::set_protocol_version(PROTOCOL_VERSION).unwrap();
 
         let pool_name = pool::create_pool_ledger(pool_config);
-        let pool_handle = indy::pool::Pool::open_ledger(&pool_name, None).unwrap();      
+        let pool_handle = indy::pool::open_pool_ledger(&pool_name, None).unwrap();
 
         pool_handle  
     }

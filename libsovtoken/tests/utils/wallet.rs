@@ -7,7 +7,7 @@ extern crate indyrs as indy;
 extern crate sovtoken;
 
 use self::indy::ErrorCode;
-use self::indy::wallet::Wallet as IndyWallet;
+use self::indy::wallet as IndyWallet;
 use self::sovtoken::utils::random::rand_string;
 
 static USEFUL_CREDENTIALS : &'static str = r#"
@@ -69,23 +69,23 @@ impl Wallet {
     
     fn open(&mut self) -> Result<i32, ErrorCode> {
         let config : String = Wallet::create_wallet_config(&self.name);
-        let handle = IndyWallet::open(&config, USEFUL_CREDENTIALS)?;
+        let handle = IndyWallet::open_wallet(&config, USEFUL_CREDENTIALS)?;
         self.handle = handle;
         return Ok(handle);
     }
 
     fn create(&self) -> Result<(), ErrorCode> {
         let config = Wallet::create_wallet_config(&self.name);
-        return IndyWallet::create(&config, USEFUL_CREDENTIALS)
+        return IndyWallet::create_wallet(&config, USEFUL_CREDENTIALS)
     }
 
     fn close(&self) -> Result<(), ErrorCode> {
-        IndyWallet::close(self.handle)
+        IndyWallet::close_wallet(self.handle)
     }
 
     fn delete(&self) -> Result<(), ErrorCode> {
         let config : String = Wallet::create_wallet_config(&self.name);
-        return IndyWallet::delete(&config, USEFUL_CREDENTIALS)
+        return IndyWallet::delete_wallet(&config, USEFUL_CREDENTIALS)
     }
 }
 

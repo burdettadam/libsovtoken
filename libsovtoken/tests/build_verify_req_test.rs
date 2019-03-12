@@ -35,9 +35,9 @@ pub fn build_and_submit_verify_on_mint() {
     //We need to wait a little before trying to verify txn
     sleep(1000);
 
-    let (get_utxo_req, payment_method) = indy::payments::Payment::build_verify_req(wallet.handle, Some(dids[0]), &txo).unwrap();
-    let res = indy::ledger::Ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
-    let res = indy::payments::Payment::parse_verify_response(&payment_method, &res).unwrap();
+    let (get_utxo_req, payment_method) = indy::payments::build_verify_payment_req(wallet.handle, Some(dids[0]), &txo).unwrap();
+    let res = indy::ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
+    let res = indy::payments::parse_verify_payment_response(&payment_method, &res).unwrap();
 
     let res_parsed: serde_json::Value = serde_json::from_str(&res).unwrap();
     assert!(res_parsed.as_object().unwrap().get("sources").unwrap().as_array().unwrap().is_empty());
@@ -62,9 +62,9 @@ pub fn build_and_submit_verify_on_mint_with_empty_did() {
     //We need to wait a little before trying to verify txn
     sleep(1000);
 
-    let (get_utxo_req, payment_method) = indy::payments::Payment::build_verify_req(wallet.handle, None, &txo).unwrap();
-    let res = indy::ledger::Ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
-    let res = indy::payments::Payment::parse_verify_response(&payment_method, &res).unwrap();
+    let (get_utxo_req, payment_method) = indy::payments::build_verify_payment_req(wallet.handle, None, &txo).unwrap();
+    let res = indy::ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
+    let res = indy::payments::parse_verify_payment_response(&payment_method, &res).unwrap();
 
     let res_parsed: serde_json::Value = serde_json::from_str(&res).unwrap();
     assert!(res_parsed.as_object().unwrap().get("sources").unwrap().as_array().unwrap().is_empty());
@@ -93,9 +93,9 @@ pub fn build_and_submit_verify_on_xfer() {
             "amount": 10
         }
     ]).to_string();
-    let (req, method) = indy::payments::Payment::build_payment_req(wallet.handle, Some(dids[0]), &inputs, &outputs, None).unwrap();
-    let res = indy::ledger::Ledger::submit_request(pool_handle, &req).unwrap();
-    let res = indy::payments::Payment::parse_payment_response(&method, &res).unwrap();
+    let (req, method) = indy::payments::build_payment_req(wallet.handle, Some(dids[0]), &inputs, &outputs, None).unwrap();
+    let res = indy::ledger::submit_request(pool_handle, &req).unwrap();
+    let res = indy::payments::parse_payment_response(&method, &res).unwrap();
 
     let res_parsed: serde_json::Value = serde_json::from_str(&res).unwrap();
     let utxos = res_parsed.as_array().unwrap();
@@ -105,9 +105,9 @@ pub fn build_and_submit_verify_on_xfer() {
     //We need to wait a little before trying to verify txn
     sleep(1000);
 
-    let (get_utxo_req, payment_method) = indy::payments::Payment::build_verify_req(wallet.handle, Some(dids[0]), &new_utxo).unwrap();
-    let res = indy::ledger::Ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
-    let res = indy::payments::Payment::parse_verify_response(&payment_method, &res).unwrap();
+    let (get_utxo_req, payment_method) = indy::payments::build_verify_payment_req(wallet.handle, Some(dids[0]), &new_utxo).unwrap();
+    let res = indy::ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
+    let res = indy::payments::parse_verify_payment_response(&payment_method, &res).unwrap();
 
     let res_parsed: serde_json::Value = serde_json::from_str(&res).unwrap();
     assert_eq!(res_parsed.as_object().unwrap().get("sources").unwrap().as_array().unwrap().get(0).unwrap().as_str().unwrap(), txo);
@@ -137,13 +137,13 @@ pub fn build_and_submit_verify_on_fees() {
         "amount": 9
     }]).to_string();
 
-    let (did_new, verkey_new) = indy::did::Did::new(wallet.handle, "{}").unwrap();
+    let (did_new, verkey_new) = indy::did::create_and_store_my_did(wallet.handle, "{}").unwrap();
 
-    let nym_req = indy::ledger::Ledger::build_nym_request(dids[0], &did_new,  Some(&verkey_new), None, None).unwrap();
-    let nym_req_signed = indy::ledger::Ledger::sign_request(wallet.handle, dids[0], &nym_req).unwrap();
-    let (nym_req_with_fees, pm) = indy::payments::Payment::add_request_fees(wallet.handle, Some(dids[0]), &nym_req_signed, &inputs, &outputs, None).unwrap();
-    let nym_resp = indy::ledger::Ledger::submit_request(pool_handle, &nym_req_with_fees).unwrap();
-    let res = indy::payments::Payment::parse_response_with_fees(&pm, &nym_resp).unwrap();
+    let nym_req = indy::ledger::build_nym_request(dids[0], &did_new,  Some(&verkey_new), None, None).unwrap();
+    let nym_req_signed = indy::ledger::sign_request(wallet.handle, dids[0], &nym_req).unwrap();
+    let (nym_req_with_fees, pm) = indy::payments::add_request_fees(wallet.handle, Some(dids[0]), &nym_req_signed, &inputs, &outputs, None).unwrap();
+    let nym_resp = indy::ledger::submit_request(pool_handle, &nym_req_with_fees).unwrap();
+    let res = indy::payments::parse_response_with_fees(&pm, &nym_resp).unwrap();
 
     let res_parsed: serde_json::Value = serde_json::from_str(&res).unwrap();
     let utxos = res_parsed.as_array().unwrap();
@@ -153,9 +153,9 @@ pub fn build_and_submit_verify_on_fees() {
     //We need to wait a little before trying to verify txn
     sleep(1000);
 
-    let (get_utxo_req, payment_method) = indy::payments::Payment::build_verify_req(wallet.handle, Some(dids[0]), &new_utxo).unwrap();
-    let res = indy::ledger::Ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
-    let res = indy::payments::Payment::parse_verify_response(&payment_method, &res).unwrap();
+    let (get_utxo_req, payment_method) = indy::payments::build_verify_payment_req(wallet.handle, Some(dids[0]), &new_utxo).unwrap();
+    let res = indy::ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
+    let res = indy::payments::parse_verify_payment_response(&payment_method, &res).unwrap();
 
     let res_parsed: serde_json::Value = serde_json::from_str(&res).unwrap();
     assert_eq!(res_parsed.as_object().unwrap().get("sources").unwrap().as_array().unwrap().get(0).unwrap().as_str().unwrap(), txo);
@@ -181,9 +181,9 @@ pub fn build_and_submit_verify_req_for_unexistant_utxo() {
     //We need to wait a little before trying to verify txn
     sleep(1000);
 
-    let (get_utxo_req, payment_method) = indy::payments::Payment::build_verify_req(wallet.handle, Some(dids[0]), &txo).unwrap();
-    let res = indy::ledger::Ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
-    let err = indy::payments::Payment::parse_verify_response(&payment_method, &res).unwrap_err();
+    let (get_utxo_req, payment_method) = indy::payments::build_verify_payment_req(wallet.handle, Some(dids[0]), &txo).unwrap();
+    let res = indy::ledger::sign_and_submit_request(pool_handle, wallet.handle, dids[0], &get_utxo_req).unwrap();
+    let err = indy::payments::parse_verify_payment_response(&payment_method, &res).unwrap_err();
 
     assert_eq!(err, ErrorCode::PaymentSourceDoesNotExistError);
 }
@@ -192,11 +192,11 @@ pub fn build_and_submit_verify_req_for_unexistant_utxo() {
 fn build_verify_req_works_for_invalid_utxo() {
     sovtoken::api::sovtoken_init();
     let wallet = Wallet::new();
-    let (did, _) = indy::did::Did::new(wallet.handle, &json!({"seed": "000000000000000000000000Trustee1"}).to_string()).unwrap();
+    let (did, _) = indy::did::create_and_store_my_did(wallet.handle, &json!({"seed": "000000000000000000000000Trustee1"}).to_string()).unwrap();
 
     let receipt = "txo:sov:1234";
 
-    let err = indy::payments::Payment::build_verify_req(wallet.handle, Some(&did), receipt).unwrap_err();
+    let err = indy::payments::build_verify_payment_req(wallet.handle, Some(&did), receipt).unwrap_err();
 
     assert_eq!(err, ErrorCode::CommonInvalidStructure)
 }

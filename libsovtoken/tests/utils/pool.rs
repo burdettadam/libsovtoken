@@ -15,7 +15,7 @@ pub fn create_pool_config() -> String {
 
 pub fn create_pool_ledger(pool_cfg: Option<&str>) -> String {
     let name = rand_string(10);
-    indy::pool::Pool::create_ledger_config(&name, pool_cfg).unwrap();
+    indy::pool::create_pool_ledger_config(&name, pool_cfg).unwrap();
     name
 }
 

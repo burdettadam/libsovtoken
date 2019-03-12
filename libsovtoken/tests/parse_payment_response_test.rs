@@ -76,7 +76,7 @@ static PARSE_PAYMENT_RESPONSE_JSON: &'static str = r#"{
 #[test]
 pub fn parse_payment_response_works() {
     sovtoken::api::sovtoken_init();
-    let resp = indy::payments::Payment::parse_payment_response("sov", PARSE_PAYMENT_RESPONSE_JSON).unwrap();
+    let resp = indy::payments::parse_payment_response("sov", PARSE_PAYMENT_RESPONSE_JSON).unwrap();
     let resp: Vec<serde_json::Value> = serde_json::from_str(&resp).unwrap();
     assert_eq!(resp.len(), 4);
     for utxo in resp {
@@ -89,6 +89,6 @@ pub fn parse_payment_response_works() {
 #[test]
 pub fn parse_payment_response_works_for_invalid() {
     sovtoken::api::sovtoken_init();
-    let resp = indy::payments::Payment::parse_payment_response("sov", "123").unwrap_err();
+    let resp = indy::payments::parse_payment_response("sov", "123").unwrap_err();
     assert_eq!(resp, ErrorCode::CommonInvalidStructure);
 }

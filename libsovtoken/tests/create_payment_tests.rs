@@ -152,8 +152,8 @@ pub fn create_address_two_times_with_the_same_seed() {
 
     let seed = json!({"seed": "00000000000000000000000000000000"}).to_string();
 
-    let _pa1 = indy::payments::Payment::create_payment_address(wallet.handle, "sov", &seed).unwrap();
-    let err = indy::payments::Payment::create_payment_address(wallet.handle, "sov", &seed).unwrap_err();
+    let _pa1 = indy::payments::create_payment_address(wallet.handle, "sov", &seed).unwrap();
+    let err = indy::payments::create_payment_address(wallet.handle, "sov", &seed).unwrap_err();
 
     assert_eq!(err, indy::ErrorCode::WalletItemAlreadyExists);
 }
